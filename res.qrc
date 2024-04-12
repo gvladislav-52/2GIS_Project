@@ -2,5 +2,6 @@
     <qresource prefix="/">
         <file>Main.qml</file>
         <file>Histogram.qml</file>
+        <file>Bar_buttons.qml</file>
     </qresource>
 </RCC>
