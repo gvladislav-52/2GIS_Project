@@ -5,6 +5,8 @@ Rectangle
 {
     color: "gray"
     property var button_vector_name: ["Открыть", "Старт", "Пауза", "Отмена"]
+    property var button_color: ["blue","green","green","red"]
+    property var button_hover_color: ["darkblue","darkgreen","darkgreen","darkred"]
     ColumnLayout
     {
         anchors.fill: parent
@@ -34,6 +36,29 @@ Rectangle
             }
         }
 
+        Rectangle
+        {
+            Layout.alignment: Qt.AlignHCenter
+            Layout.preferredHeight: parent.height * 0.05
+            Layout.preferredWidth: parent.width * 0.8
+            color: "lightgray"
+            border.color: "black"
+            radius: parent.height * 0.01
+            Text
+            {
+                anchors
+                {
+                    left: parent.left
+                    leftMargin: parent.width * 0.025
+                    verticalCenter: parent.verticalCenter
+                }
+
+                text: "file: " + file_proc.Filename;
+                font.pixelSize: parent.height * 0.5
+            }
+            clip: true
+        }
+
         Repeater
         {
             model: button_vector_name.length
@@ -41,10 +66,17 @@ Rectangle
                 Layout.alignment: Qt.AlignHCenter
                 Layout.preferredHeight: parent.height * 0.1
                 Layout.preferredWidth: parent.width * 0.8
-                text: button_vector_name[index]
+                Text
+                {
+                    anchors.centerIn: parent
+                    text: button_vector_name[index]
+                    color: "white"
+                    font.bold: true
+                    font.pixelSize: parent.height * 0.25
+                }
 
                 background: Rectangle {
-                    color: parent.pressed ? "#696969" : (parent.hovered ? "darkblue" : "blue")
+                    color: parent.pressed ? "#696969" : (parent.hovered ? button_hover_color[index] : button_color[index])
                     radius: parent.height * 0.1
                     border.color: "black"
                     border.width: 1
@@ -55,46 +87,20 @@ Rectangle
                     switch(index)
                     {
                     case 0:
+                        file_proc.setFileName()
+                        break;
+                    case 1:
                         file_proc.chooseFileAndPrintName()
+                        break;
+                    case 2:
+                        file_proc.setPause()
+                        break;
+                    case 3:
+                        file_proc.cancel_Function();
                         break;
                     }
                 }
             }
         }
-
-        // Button {
-        //     Layout.alignment: Qt.AlignHCenter
-        //     Layout.preferredHeight: parent.height * 0.1
-        //     Layout.preferredWidth: parent.width * 0.8
-        //     text: "Открыть"
-
-        //     background: Rectangle {
-        //         color: parent.pressed ? "#696969" : (parent.hovered ? "darkblue" : "blue")
-        //         radius: parent.height * 0.1
-        //     }
-        // }
-        // Button
-        // {
-        //     Layout.alignment: Qt.AlignHCenter
-        //     Layout.preferredHeight: parent.height * 0.1
-        //     Layout.preferredWidth: parent.width * 0.8
-        //     text: "Старт"
-        // }
-        // Button
-        // {
-        //     Layout.alignment: Qt.AlignHCenter
-        //     Layout.preferredHeight: parent.height * 0.1
-        //     Layout.preferredWidth: parent.width * 0.8
-        //     text: "Пауза"
-        // }
-
-        // Button
-        // {
-        //     Layout.alignment: Qt.AlignHCenter
-        //     Layout.preferredHeight: parent.height * 0.1
-        //     Layout.preferredWidth: parent.width * 0.8
-        //     text: "Отмена"
-        // }
     }
-
 }

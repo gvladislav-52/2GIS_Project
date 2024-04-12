@@ -2,6 +2,7 @@
 #include <QQmlContext>
 #include <QApplication>
 #include "file_processing.h"
+
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
@@ -22,6 +23,8 @@ int main(int argc, char *argv[])
     QQmlContext * rootContext = engine.rootContext();
     rootContext->setContextProperty("file_proc", &fp);
     engine.load(url);
+
+
     //fp.chooseFileAndPrintName();
 
     return app.exec();

@@ -12,6 +12,7 @@ class File_processing: public QObject
     Q_PROPERTY(QVector<QString> Top_Words_inFile READ Top_Words_inFile WRITE setTop_Words_inFile NOTIFY Top_Words_inFileChanged FINAL)
 
     Q_PROPERTY(double Progress READ getProgress WRITE setProgress NOTIFY ProgressChanged FINAL)
+    Q_PROPERTY(QString Filename READ getFilename WRITE setFilename NOTIFY FilenameChanged FINAL)
 public:
     File_processing();
     QVector<int> getTop_CountWords_inFile() const;
@@ -22,23 +23,38 @@ public:
 
     double getProgress() const;
     void setProgress(double newProgress);
+    void resetCountWords();
+    void resetWords();
+    void resetProgress();
+
+    QString getFilename() const;
+    void setFilename(const QString &newFilename);
 
 public slots:
     void chooseFileAndPrintName();
     void setCountWords(int count);
     void setWords(QString word);
+    void setFileName();
+    void cancel_Function();
+    void setPause();
 signals:
     void Top_CountWords_inFileChanged();
     void progressChanged(double progress);
     void Top_Words_inFileChanged();
-
     void ProgressChanged();
+
+    void FilenameChanged();
 
 private:
 
     QVector<int> m_Top_CountWords_inFile;
     QVector<QString> m_Top_Words_inFile;
     double m_Progress;
+    QString m_Filename;
+    QString path;
+    bool Pause;
 };
+
+
 
 #endif // FILE_PROCESSING_H
