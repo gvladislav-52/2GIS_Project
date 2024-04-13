@@ -30,6 +30,7 @@ public:
     QString getFilename() const;
     void setFilename(const QString &newFilename);
 
+
 public slots:
     void chooseFileAndPrintName();
     void setCountWords(int count);
@@ -37,6 +38,8 @@ public slots:
     void setFileName();
     void cancel_Function();
     void setPause();
+    void setCancel();
+    bool getPause();
 signals:
     void Top_CountWords_inFileChanged();
     void progressChanged(double progress);
@@ -52,6 +55,7 @@ private:
     double m_Progress;
     QString m_Filename;
     QString path;
+    bool Cancel;
     bool Pause;
 };
 

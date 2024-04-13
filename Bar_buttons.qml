@@ -7,6 +7,7 @@ Rectangle
     property var button_vector_name: ["Открыть", "Старт", "Пауза", "Отмена"]
     property var button_color: ["blue","green","green","red"]
     property var button_hover_color: ["darkblue","darkgreen","darkgreen","darkred"]
+    property var button_pause: button_vector_name[2]
     ColumnLayout
     {
         anchors.fill: parent
@@ -68,8 +69,10 @@ Rectangle
                 Layout.preferredWidth: parent.width * 0.8
                 Text
                 {
+                    id: button_text
                     anchors.centerIn: parent
-                    text: button_vector_name[index]
+                    text: if(index !== 2) return button_vector_name[index]
+                            else return button_pause;
                     color: "white"
                     font.bold: true
                     font.pixelSize: parent.height * 0.25
@@ -94,9 +97,12 @@ Rectangle
                         break;
                     case 2:
                         file_proc.setPause()
+                        file_proc.getPause()? button_pause = "Продолжить" : button_pause = button_vector_name[index]
                         break;
                     case 3:
+                        file_proc.setCancel();
                         file_proc.cancel_Function();
+                        button_pause = button_vector_name[2];
                         break;
                     }
                 }

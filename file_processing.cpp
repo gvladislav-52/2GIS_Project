@@ -2,7 +2,7 @@
 #include <QTimer>
 #include <QEventLoop>
 
-File_processing::File_processing():m_Progress(0), Pause(false)
+File_processing::File_processing():m_Progress(0), Pause(false), Cancel(false)
 {
     m_Top_Words_inFile.assign(15,"-");
 }
@@ -26,9 +26,24 @@ void File_processing::chooseFileAndPrintName() {
 
             file.seek(0);
 
+            if(getPause())
+                Pause = false;
+
             QEventLoop loop;
 
-            while (!in.atEnd() && !Pause) {
+            while (!in.atEnd()) {
+
+                if (getPause()) {
+                    QTimer::singleShot(1, &loop, &QEventLoop::quit);
+                    loop.exec();
+                    continue;
+                }
+
+                if(Cancel)
+                {
+                    setCancel();
+                    break;
+                }
 
                 QString word;
                 in >> word;
@@ -40,8 +55,24 @@ void File_processing::chooseFileAndPrintName() {
                 currentWord++;
 
                 double progress = static_cast<double>(currentWord) / totalWords;
-                qDebug() << "Progress: " << progress;
                 setProgress(progress);
+
+                QList<QString> sortedWords = wordCountMap.keys();
+                std::sort(sortedWords.begin(), sortedWords.end(), [&](const QString &w1, const QString &w2) {
+                    return wordCountMap.value(w1) > wordCountMap.value(w2);
+                });
+
+                m_Top_CountWords_inFile.clear();
+                m_Top_Words_inFile.clear();
+
+                QVector<QString> topWords = sortedWords.mid(0, qMin(15, sortedWords.size()));
+                QVector<int> counts;
+                std::transform(topWords.begin(), topWords.end(), std::back_inserter(counts), [&](const QString& word) {
+                    return wordCountMap.value(word);
+                });
+
+                setTop_CountWords_inFile(counts);
+                setTop_Words_inFile(topWords);
 
                 QTimer timer;
                 timer.setSingleShot(true);
@@ -52,17 +83,6 @@ void File_processing::chooseFileAndPrintName() {
 
             file.close();
 
-            QList<QString> sortedWords = wordCountMap.keys();
-            std::sort(sortedWords.begin(), sortedWords.end(), [&](const QString &w1, const QString &w2) {
-                return wordCountMap.value(w1) > wordCountMap.value(w2);
-            });
-
-            m_Top_CountWords_inFile.clear();
-            m_Top_Words_inFile.clear();
-            for (int i = 0; i < qMin(15, sortedWords.size()); i++) {
-                setCountWords(wordCountMap.value(sortedWords[i]));
-                setWords(sortedWords[i]);
-            }
         } else {
             qDebug() << "Не удалось открыть файл";
         }
@@ -161,11 +181,22 @@ void File_processing::cancel_Function()
     resetCountWords();
     resetWords();
     resetProgress();
+    Pause = false;
 }
 
 void File_processing::setPause()
 {
     Pause = !Pause;
+}
+
+void File_processing::setCancel()
+{
+    Cancel = !Cancel;
+}
+
+bool File_processing::getPause()
+{
+    return Pause;
 }
 
 QString File_processing::getFilename() const
@@ -180,3 +211,4 @@ void File_processing::setFilename(const QString &newFilename)
     m_Filename = newFilename;
     emit FilenameChanged();
 }
+
