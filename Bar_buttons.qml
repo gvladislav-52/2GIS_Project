@@ -1,7 +1,6 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts
-import com.example 1.0
 
 Rectangle
 {
@@ -92,14 +91,11 @@ Rectangle
                     switch(index)
                     {
                     case 0:
-                        file_proc.testFuntc1()
-                        //testFuntc1.setFileName()
+                        file_proc.openFuntion()
                         break;
                     case 1:
                         button_pause = button_vector_name[2];
-                        //fileProcessor.testFuntc()
-                        file_proc.testFuntc()
-                        //file_proc.chooseFileAndPrintName()
+                        file_proc.startFunction()
                         break;
                     case 2:
                         file_proc.setPause()
@@ -107,7 +103,7 @@ Rectangle
                         break;
                     case 3:
                         file_proc.setCancel();
-                        file_proc.cancel_Function();
+                        file_proc.cancelFunction();
                         button_pause = button_vector_name[2];
                         break;
                     }

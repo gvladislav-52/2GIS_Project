@@ -10,12 +10,10 @@ CONFIG += c++17
 
 SOURCES += \
     file_processing.cpp \
-    file_thread.cpp \
     main.cpp
 
 HEADERS += \
-    file_processing.h \
-    file_thread.h
+    file_processing.h
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

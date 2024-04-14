@@ -1,17 +1,12 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts
-import com.example 1.0
 
 ApplicationWindow {
     visible: true
-    width: 600
-    height: 300
-    title: "Histogram"
-    File_processing {
-        id: fileProcessor
-    }
-
+    minimumWidth: 600
+    minimumHeight: 300
+    title: "2GIS-Project"
 
     Rectangle
     {

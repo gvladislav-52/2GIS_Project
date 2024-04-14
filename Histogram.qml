@@ -20,7 +20,7 @@ Item {
                 model: file_proc.Top_CountWords_inFile.length
                 Rectangle {
                     Layout.preferredWidth: parent.width * 0.05
-                    Layout.preferredHeight: file_proc.Top_CountWords_inFile[index] * parent.height * 0.01
+                    Layout.preferredHeight: file_proc.Top_CountWords_inFile[index] * parent.height * 0.01 * file_proc.getHeight()
                     Layout.alignment: Qt.AlignBottom
                     color: "green"
                     border.color: "black"
