@@ -30,26 +30,30 @@ public:
     QString getFilename() const;
     void setFilename(const QString &newFilename);
 
-
 public slots:
     void chooseFileAndPrintName();
     void setCountWords(int count);
     void setWords(QString word);
-    void setFileName();
+    void setFileName(QString path);
     void cancel_Function();
     void setPause();
     void setCancel();
     bool getPause();
+    void testFuntc();
+    void testFuntc1();
+    void testfile(QString &word);
+
 signals:
+    void siga();
     void Top_CountWords_inFileChanged();
     void progressChanged(double progress);
     void Top_Words_inFileChanged();
     void ProgressChanged();
 
     void FilenameChanged();
+    void progressUpdated(double progress);
 
 private:
-
     QVector<int> m_Top_CountWords_inFile;
     QVector<QString> m_Top_Words_inFile;
     double m_Progress;
@@ -57,6 +61,11 @@ private:
     QString path;
     bool Cancel;
     bool Pause;
+    double postgres = 0.0;
+    bool temp_bo = true;
+    int totalWords = 0;
+    QFile file;
+    QVector<QString> wordsVector;
 };
 
 

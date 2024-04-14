@@ -1,95 +1,75 @@
 #include "file_processing.h"
 #include <QTimer>
 #include <QEventLoop>
+#include <QThread>
+#include <QMutex>
 
-File_processing::File_processing():m_Progress(0), Pause(false), Cancel(false)
+File_processing::File_processing():m_Progress(0), Cancel(false), Pause(false)
 {
     m_Top_Words_inFile.assign(15,"-");
 }
 
-void File_processing::chooseFileAndPrintName() {
-    if(!path.isEmpty()) {
-        QFile file(path);
-        if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-            QTextStream in(&file);
-            QHash<QString, int> wordCountMap;
-            int totalWords = 0;
-            int currentWord = 0;
+void File_processing::chooseFileAndPrintName()
+{
+    QHash<QString, int> wordCountMap;
+    int currentWord = 0;
 
-            while (!in.atEnd()) {
-                QString word;
-                in >> word;
+    QScopedPointer<QEventLoop> loop(new QEventLoop);
+    QScopedPointer<QTimer> timer(new QTimer);
 
-                if (!word.isEmpty())
-                    totalWords++;
-            }
+    QVector<QString>::const_iterator it = wordsVector.constBegin();
 
-            file.seek(0);
+    while (it != wordsVector.constEnd()) {
+        QString word = *it;
 
-            if(getPause())
-                Pause = false;
-
-            QEventLoop loop;
-
-            while (!in.atEnd()) {
-
-                if (getPause()) {
-                    QTimer::singleShot(1, &loop, &QEventLoop::quit);
-                    loop.exec();
-                    continue;
-                }
-
-                if(Cancel)
-                {
-                    setCancel();
-                    break;
-                }
-
-                QString word;
-                in >> word;
-
-                if (word.isEmpty())
-                    continue;
-
-                wordCountMap[word]++;
-                currentWord++;
-
-                double progress = static_cast<double>(currentWord) / totalWords;
-                setProgress(progress);
-
-                QList<QString> sortedWords = wordCountMap.keys();
-                std::sort(sortedWords.begin(), sortedWords.end(), [&](const QString &w1, const QString &w2) {
-                    return wordCountMap.value(w1) > wordCountMap.value(w2);
-                });
-
-                m_Top_CountWords_inFile.clear();
-                m_Top_Words_inFile.clear();
-
-                QVector<QString> topWords = sortedWords.mid(0, qMin(15, sortedWords.size()));
-                QVector<int> counts;
-                std::transform(topWords.begin(), topWords.end(), std::back_inserter(counts), [&](const QString& word) {
-                    return wordCountMap.value(word);
-                });
-
-                setTop_CountWords_inFile(counts);
-                setTop_Words_inFile(topWords);
-
-                QTimer timer;
-                timer.setSingleShot(true);
-                connect(&timer, &QTimer::timeout, &loop, &QEventLoop::quit);
-                timer.start(1);
-                loop.exec();
-            }
-
-            file.close();
-
-        } else {
-            qDebug() << "Не удалось открыть файл";
+        if (getPause()) {
+            QTimer::singleShot(1, loop.data(), &QEventLoop::quit);
+            loop->exec();
+            continue;
         }
-    } else {
-        qDebug() << "Сначала выберите файл для открытия!";
+
+        if (Cancel) {
+            setCancel();
+            break;
+        }
+
+        if (word.isEmpty()) {
+            ++it;
+            continue;
+        }
+
+        wordCountMap[word]++;
+        currentWord++;
+
+        QList<QString> sortedWords = wordCountMap.keys();
+        std::sort(sortedWords.begin(), sortedWords.end(), [&](const QString &w1, const QString &w2) {
+            return wordCountMap.value(w1) > wordCountMap.value(w2);
+        });
+
+        m_Top_CountWords_inFile.clear();
+        m_Top_Words_inFile.clear();
+
+        QVector<QString> topWords = sortedWords.mid(0, qMin(15, sortedWords.size()));
+        QVector<int> counts;
+        std::transform(topWords.begin(), topWords.end(), std::back_inserter(counts), [&](const QString& word) {
+            return wordCountMap.value(word);
+        });
+
+        setProgress(static_cast<double>(currentWord) / wordsVector.size()); // Обновление прогресса
+
+        setTop_CountWords_inFile(counts);
+        setTop_Words_inFile(topWords);
+
+        timer->setSingleShot(true);
+        QObject::connect(timer.data(), &QTimer::timeout, loop.data(), &QEventLoop::quit);
+        timer->start(1);
+        loop->exec();
+
+        ++it; // Переход к следующему элементу
     }
 }
+
+
 
 
 void File_processing::setCountWords(int count)
@@ -163,9 +143,9 @@ void File_processing::resetProgress()
     emit ProgressChanged();
 }
 
-void File_processing::setFileName()
+void File_processing::setFileName(QString path)
 {
-    path = QFileDialog::getOpenFileName(nullptr, "Выберите файл", "", "Text Files (*.txt)");
+    qDebug() << "setFileName: " << QThread::currentThreadId();
     if (!path.isEmpty()) {
         QFileInfo fileInfo(path);
         setFilename(fileInfo.fileName());
@@ -197,6 +177,52 @@ void File_processing::setCancel()
 bool File_processing::getPause()
 {
     return Pause;
+}
+
+void File_processing::testFuntc()
+{
+    QString word;
+    std::thread t([&](){
+        testfile(std::ref(word));
+    });
+    t.join();
+    chooseFileAndPrintName();
+}
+
+void File_processing::testFuntc1()
+{
+    path = QFileDialog::getOpenFileName(nullptr, "Выберите файл", "", "Text Files (*.txt)");
+    std::thread t([&](){
+        setFileName(path);
+    });
+    t.join();
+}
+
+void File_processing::testfile(QString &word)
+{
+    qDebug() << "ШРЕДЕР ПЖПЖПЖ Logics-thread: " << QThread::currentThreadId();
+    wordsVector.clear();
+        file.setFileName(path);
+    if (!path.isEmpty()) {
+        if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            QTextStream in(&file);
+            totalWords = 0;
+
+            while (!in.atEnd()) {
+                in >> word;
+                wordsVector.append(word);
+            }
+
+            if (getPause())
+                Pause = false;
+
+        } else {
+            qDebug() << "Не удалось открыть файл";
+        }
+    } else {
+        qDebug() << "Сначала выберите файл для открытия!";
+    }
+    file.close();
 }
 
 QString File_processing::getFilename() const

@@ -1,6 +1,8 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts
+import com.example 1.0
+
 Rectangle
 {
     color: "gray"
@@ -90,10 +92,14 @@ Rectangle
                     switch(index)
                     {
                     case 0:
-                        file_proc.setFileName()
+                        file_proc.testFuntc1()
+                        //testFuntc1.setFileName()
                         break;
                     case 1:
-                        file_proc.chooseFileAndPrintName()
+                        button_pause = button_vector_name[2];
+                        //fileProcessor.testFuntc()
+                        file_proc.testFuntc()
+                        //file_proc.chooseFileAndPrintName()
                         break;
                     case 2:
                         file_proc.setPause()
