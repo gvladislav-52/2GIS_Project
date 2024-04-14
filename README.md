@@ -23,3 +23,6 @@
 ## Автор
 Grachev Vladislav
 [GitHub - gvladislav-52](https://github.com/gvladislav-52)
+
+![the first screen](https://github.com/gvladislav-52/2GIS_Project/blob/main/Screenshots/Screen_1_Start.png)
+![the first screen](https://github.com/gvladislav-52/2GIS_Project/blob/main/Screenshots/Screen_2_End.png)
