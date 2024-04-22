@@ -2,6 +2,7 @@
 #include <QTimer>
 #include <QEventLoop>
 #include <QThread>
+#include <QtConcurrent>
 
 File_processing::File_processing():m_Progress(0), Cancel(false), Pause(false), m_Height(1)
 {
@@ -177,12 +178,9 @@ bool File_processing::getPause()
 
 void File_processing::startFunction()
 {
-    QString word;
-    std::thread t([&](){
+    QtConcurrent::run([&]() {
         readingFile();
     });
-    t.join();
-    workingWithData();
 }
 
 void File_processing::openFuntion()
@@ -196,22 +194,35 @@ void File_processing::openFuntion()
 
 void File_processing::readingFile()
 {
+    QString word;
+    int currentWord = 0;
+    int totalWords = 0;
     qDebug() << "ID Function working with file:" << QThread::currentThreadId();
-    wordsVector.clear();
+    //wordsVector.clear();
         file.setFileName(path);
     if (!path.isEmpty()) {
         if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
             QTextStream in(&file);
-            totalWords = 0;
-            QString word;
+
             while (!in.atEnd()) {
                 in >> word;
-                wordsVector.append(word);
+                totalWords++;
             }
 
-            if (getPause())
-                Pause = false;
+            file.seek(0);
+            while (!in.atEnd()) {
+                currentWord++;
+                in >> word;
+              // qDebug() << words;
 
+                QThread::msleep(1);
+                if (getPause())
+                {
+                    Pause = false;
+                    break;
+                }
+                setProgress(static_cast<double>(currentWord) / totalWords);
+            }
         } else {
             qDebug() << "Не удалось открыть файл";
         }
