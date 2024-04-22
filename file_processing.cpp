@@ -194,6 +194,7 @@ void File_processing::openFuntion()
 
 void File_processing::readingFile()
 {
+    QHash<QString, int> wordCountMap;
     QString word;
     int currentWord = 0;
     int totalWords = 0;
@@ -211,17 +212,39 @@ void File_processing::readingFile()
 
             file.seek(0);
             while (!in.atEnd()) {
+                wordCountMap[word]++;
                 currentWord++;
                 in >> word;
-              // qDebug() << words;
 
-                QThread::msleep(1);
+               QThread::usleep(100);
                 if (getPause())
                 {
                     Pause = false;
                     break;
                 }
+
+                if((currentWord % 50 == 0) || (currentWord == totalWords))
+                {
+                QList<QString> sortedWords = wordCountMap.keys();
+                std::sort(sortedWords.begin(), sortedWords.end(), [&](const QString &w1, const QString &w2) {
+                    return wordCountMap.value(w1) > wordCountMap.value(w2);
+                });
+
+                m_Top_CountWords_inFile.clear();
+                m_Top_Words_inFile.clear();
+
+                QVector<QString> topWords = sortedWords.mid(0, qMin(15, sortedWords.size()));
+                QVector<int> counts;
+                std::transform(topWords.begin(), topWords.end(), std::back_inserter(counts), [&](const QString& word) {
+                    return wordCountMap.value(word);
+                });
+                if(counts[0] %75 == 0)
+                    m_Height = 0.5;
+
                 setProgress(static_cast<double>(currentWord) / totalWords);
+                setTop_CountWords_inFile(counts);
+                setTop_Words_inFile(topWords);
+                }
             }
         } else {
             qDebug() << "Не удалось открыть файл";
