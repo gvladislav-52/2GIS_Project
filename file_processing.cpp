@@ -1,6 +1,5 @@
 #include "file_processing.h"
 #include <QtConcurrent>
-#include <mutex>
 
 File_processing::File_processing():m_Progress(0), Cancel(false), Pause(false), m_Height(1)
 {
@@ -105,7 +104,6 @@ void File_processing::startFunction()
 {
     QtConcurrent::run([&]()
     {
-        std::mutex mtx;
         QHash<QString, int> wordCountMap;
         QString word;
         int currentWord = 0;
@@ -151,14 +149,12 @@ void File_processing::startFunction()
                         if(counts[0] %75 == 0)
                             m_Height = 0.5;
 
-                        mtx.lock();
                         m_Top_CountWords_inFile.clear();
                         m_Top_Words_inFile.clear();
 
                         setTop_CountWords_inFile(counts);
                         setTop_Words_inFile(topWords);
                         setProgress(static_cast<double>(currentWord) / totalWords);
-                        mtx.unlock();
                     }
                 }
                 setStart(false);
