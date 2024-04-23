@@ -30,18 +30,14 @@ public:
     void resetProgress();
 
 public slots:
-    void workingWithData();
-    void setCountWords(int &count);
-    void setWords(QString &word);
-    void setFileName(QString &path);
     void cancelFunction();
-    void setPause();
-    void setCancel();
+    void setPause(bool temp_pause);
+    void setCancel(bool temp_cancel);
+    void setStart(bool temp_start);
     bool getPause();
+    bool getStart();
     void startFunction();
     void openFuntion();
-    void readingFile();
-
     double getHeight() {return m_Height;}
 
 signals:
@@ -58,9 +54,8 @@ private:
     QString path;
     bool Cancel;
     bool Pause;
-    int totalWords = 0;
+    bool Start;
     QFile file;
-    QVector<QString> wordsVector;
     double m_Height;
 };
 

@@ -1,83 +1,11 @@
 #include "file_processing.h"
-#include <QTimer>
-#include <QEventLoop>
-#include <QThread>
 #include <QtConcurrent>
+#include <mutex>
 
 File_processing::File_processing():m_Progress(0), Cancel(false), Pause(false), m_Height(1)
 {
     m_Top_Words_inFile.assign(15,"-");
-}
-
-void File_processing::workingWithData()
-{
-    QHash<QString, int> wordCountMap;
-    int currentWord = 0;
-
-    QScopedPointer<QEventLoop> loop(new QEventLoop);
-    QScopedPointer<QTimer> timer(new QTimer);
-
-    QVector<QString>::const_iterator it = wordsVector.constBegin();
-
-    while (it != wordsVector.constEnd()) {
-        QString word = *it;
-        if (getPause()) {
-            QTimer::singleShot(1, loop.data(), &QEventLoop::quit);
-            loop->exec();
-            continue;
-        }
-
-        if (Cancel) {
-            setCancel();
-            break;
-        }
-
-        if (word.isEmpty()) {
-            ++it;
-            continue;
-        }
-
-        wordCountMap[word]++;
-        currentWord++;
-
-        QList<QString> sortedWords = wordCountMap.keys();
-        std::sort(sortedWords.begin(), sortedWords.end(), [&](const QString &w1, const QString &w2) {
-            return wordCountMap.value(w1) > wordCountMap.value(w2);
-        });
-
-        m_Top_CountWords_inFile.clear();
-        m_Top_Words_inFile.clear();
-
-        QVector<QString> topWords = sortedWords.mid(0, qMin(15, sortedWords.size()));
-        QVector<int> counts;
-        std::transform(topWords.begin(), topWords.end(), std::back_inserter(counts), [&](const QString& word) {
-            return wordCountMap.value(word);
-        });
-        if(counts[0] %75 == 0)
-            m_Height = 0.5;
-
-        setProgress(static_cast<double>(currentWord) / wordsVector.size());
-        setTop_CountWords_inFile(counts);
-        setTop_Words_inFile(topWords);
-
-        timer->setSingleShot(true);
-        QObject::connect(timer.data(), &QTimer::timeout, loop.data(), &QEventLoop::quit);
-        timer->start(1);
-        loop->exec();
-        ++it;
-    }
-}
-
-void File_processing::setCountWords(int &count)
-{
-    m_Top_CountWords_inFile.append(count);
-    emit Top_CountWords_inFileChanged();
-}
-
-void File_processing::setWords(QString &word)
-{
-    m_Top_Words_inFile.append(word);
-    emit Top_Words_inFileChanged();
+    Start = false;
 }
 
 QVector<int> File_processing::getTop_CountWords_inFile() const
@@ -105,7 +33,6 @@ void File_processing::setTop_Words_inFile(const QVector<QString> &newTop_Words_i
     m_Top_Words_inFile = newTop_Words_inFile;
     emit Top_Words_inFileChanged();
 }
-
 
 double File_processing::getProgress() const
 {
@@ -139,36 +66,29 @@ void File_processing::resetProgress()
     emit ProgressChanged();
 }
 
-void File_processing::setFileName(QString &path)
-{
-    qDebug() << "ID Function set file path:\t" << QThread::currentThreadId();
-    if (!path.isEmpty()) {
-        QFileInfo fileInfo(path);
-        setFilename(fileInfo.fileName());
-    } else {
-        qDebug() << "Файл не был выбран.";
-    }
-}
-
 void File_processing::cancelFunction()
 {
-    wordsVector.clear();
-    path.clear();
-    setFilename("");
     resetCountWords();
     resetWords();
     resetProgress();
     Pause = false;
+    path.clear();
+    setFilename("");
 }
 
-void File_processing::setPause()
+void File_processing::setPause(bool temp_pause)
 {
-    Pause = !Pause;
+    Pause = temp_pause;
 }
 
-void File_processing::setCancel()
+void File_processing::setCancel(bool temp_cancel)
 {
-    Cancel = !Cancel;
+    Cancel = temp_cancel;
+}
+
+void File_processing::setStart(bool temp_start)
+{
+    Start = temp_start;
 }
 
 bool File_processing::getPause()
@@ -176,83 +96,95 @@ bool File_processing::getPause()
     return Pause;
 }
 
+bool File_processing::getStart()
+{
+   return Start;
+}
+
 void File_processing::startFunction()
 {
-    QtConcurrent::run([&]() {
-        readingFile();
+    QtConcurrent::run([&]()
+    {
+        std::mutex mtx;
+        QHash<QString, int> wordCountMap;
+        QString word;
+        int currentWord = 0;
+        int totalWords = 0;
+        qDebug() << "ID Function working with file:" << QThread::currentThreadId();
+        file.setFileName(path);
+        if (!path.isEmpty()) {
+            if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+                setStart(true);
+                QTextStream in(&file);
+
+                while (!in.atEnd()) {
+                    in >> word;
+                    totalWords++;
+                }
+
+                file.seek(0);
+                while (!in.atEnd()) {
+                    if (getPause())
+                        continue;
+
+                    if (Cancel) {
+                        setCancel(false);
+                        break;
+                    }
+
+                    in >> word;
+                    wordCountMap[word]++;
+                    currentWord++;
+
+                    if((currentWord % 50 == 0) || (currentWord == totalWords))
+                    {
+                        QList<QString> sortedWords = wordCountMap.keys();
+                        std::sort(sortedWords.begin(), sortedWords.end(), [&](const QString &w1, const QString &w2) {
+                            return wordCountMap.value(w1) > wordCountMap.value(w2);
+                        });
+
+                        QVector<QString> topWords = sortedWords.mid(0, qMin(15, sortedWords.size()));
+                        QVector<int> counts;
+                        std::transform(topWords.begin(), topWords.end(), std::back_inserter(counts), [&](const QString& word) {
+                            return wordCountMap.value(word);
+                        });
+                        if(counts[0] %75 == 0)
+                            m_Height = 0.5;
+
+                        mtx.lock();
+                        m_Top_CountWords_inFile.clear();
+                        m_Top_Words_inFile.clear();
+
+                        setTop_CountWords_inFile(counts);
+                        setTop_Words_inFile(topWords);
+                        setProgress(static_cast<double>(currentWord) / totalWords);
+                        mtx.unlock();
+                    }
+                }
+                setStart(false);
+                file.close();
+            } else {
+                qDebug() << "Не удалось открыть файл";
+            }
+        } else {
+            qDebug() << "Сначала выберите файл для открытия!";
+        }
     });
 }
 
 void File_processing::openFuntion()
 {
     path = QFileDialog::getOpenFileName(nullptr, "Выберите файл", "", "Text Files (*.txt)");
-    std::thread t([&](){
-        setFileName(path);
-    });
-    t.join();
-}
-
-void File_processing::readingFile()
-{
-    QHash<QString, int> wordCountMap;
-    QString word;
-    int currentWord = 0;
-    int totalWords = 0;
-    qDebug() << "ID Function working with file:" << QThread::currentThreadId();
-    //wordsVector.clear();
-        file.setFileName(path);
-    if (!path.isEmpty()) {
-        if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-            QTextStream in(&file);
-
-            while (!in.atEnd()) {
-                in >> word;
-                totalWords++;
-            }
-
-            file.seek(0);
-            while (!in.atEnd()) {
-                wordCountMap[word]++;
-                currentWord++;
-                in >> word;
-
-               QThread::usleep(100);
-                if (getPause())
-                {
-                    Pause = false;
-                    break;
-                }
-
-                if((currentWord % 50 == 0) || (currentWord == totalWords))
-                {
-                QList<QString> sortedWords = wordCountMap.keys();
-                std::sort(sortedWords.begin(), sortedWords.end(), [&](const QString &w1, const QString &w2) {
-                    return wordCountMap.value(w1) > wordCountMap.value(w2);
-                });
-
-                m_Top_CountWords_inFile.clear();
-                m_Top_Words_inFile.clear();
-
-                QVector<QString> topWords = sortedWords.mid(0, qMin(15, sortedWords.size()));
-                QVector<int> counts;
-                std::transform(topWords.begin(), topWords.end(), std::back_inserter(counts), [&](const QString& word) {
-                    return wordCountMap.value(word);
-                });
-                if(counts[0] %75 == 0)
-                    m_Height = 0.5;
-
-                setProgress(static_cast<double>(currentWord) / totalWords);
-                setTop_CountWords_inFile(counts);
-                setTop_Words_inFile(topWords);
-                }
-            }
-        } else {
-            qDebug() << "Не удалось открыть файл";
-        }
-    } else {
-        qDebug() << "Сначала выберите файл для открытия!";
-    }
-    file.close();
+    QtConcurrent::run([&]()
+                      {
+                          qDebug() << "ID Function set file path:\t" << QThread::currentThreadId();
+                          if (!path.isEmpty()) {
+                              QFileInfo fileInfo(path);
+                              setFilename(fileInfo.fileName());
+                          } else {
+                              qDebug() << "Файл не был выбран.";
+                          }
+                      });
 }
 
 QString File_processing::getFilename() const

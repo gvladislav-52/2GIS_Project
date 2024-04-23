@@ -95,14 +95,21 @@ Rectangle
                         break;
                     case 1:
                         button_pause = button_vector_name[2];
-                        file_proc.startFunction()
+                        if(file_proc.getPause())
+                        {
+                            file_proc.setPause(false)
+                            if(!file_proc.getStart())
+                                file_proc.startFunction()
+                        }
+                        else
+                             file_proc.startFunction()
                         break;
                     case 2:
-                        file_proc.setPause()
+                        file_proc.setPause(!file_proc.getPause())
                         file_proc.getPause()? button_pause = "Продолжить" : button_pause = button_vector_name[index]
                         break;
                     case 3:
-                        file_proc.setCancel();
+                        file_proc.setCancel(true);
                         file_proc.cancelFunction();
                         button_pause = button_vector_name[2];
                         break;
